@@ -5,11 +5,11 @@ from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 import logging
 import socket
 import subprocess
-import sys
 from time import sleep
 
 hardcode_essid = "ncguest"
 gateway = ""
+
 
 def set_gateway(name, hop):
     global gateway
@@ -20,21 +20,23 @@ def set_gateway(name, hop):
     octets = hop.split(".")
     octets[3] = str(int(octets[3]) + 1)
     address = ".".join(octets)
-    print(cmd("ifconfig en0 " + address))
-    print("Setting ip address to %s" % (address))
 
-    print(cmd("route add default " + hop))
+    print("Setting ip address to %s" % (address))
+    print(cmd("ifconfig en0 " + address))
+
     print("Gateway has been set to %s\n" % (gateway))
+    print(cmd("route add default " + hop))
+
 
 def remove_gateway():
-    cmd("route delete default")
     print("Gateway shutted down, panica!\n")
+    print(cmd("route delete default"))
+
 
 def cmd(cmd):
-    return subprocess.Popen(
-            cmd, shell = True,
-            stdout = subprocess.PIPE, stderr=subprocess.STDOUT
-            ).stdout.read().decode()
+    return subprocess.Popen(cmd, shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                            ).stdout.read().decode()
 
 
 def get_ip_address():
@@ -52,8 +54,10 @@ def get_ip_address():
 
 self_ip = get_ip_address()
 
+
 def get_hostname_from_servicename(name, service_type):
     return name.split(service_type)[0]
+
 
 def on_service_state_change(zeroconf, service_type, name, state_change):
     global gateway
@@ -67,12 +71,12 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
 
         print("Added device %s, gateway %s" % (address, isGw))
 
-        if ( address != self_ip and isGw == True ):
+        if (address != self_ip and isGw is True):
             set_gateway(service_hostname, address)
 
-
     print(gateway)
-    if state_change is ServiceStateChange.Removed and service_hostname == gateway:
+    if state_change is ServiceStateChange.Removed and \
+            service_hostname == gateway:
         remove_gateway()
 
     print("\n")
@@ -82,17 +86,16 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     zeroconf = Zeroconf()
-    browser = ServiceBrowser(zeroconf, "_nc-mesh._tcp.local.", handlers=[on_service_state_change])
+    browser = ServiceBrowser(zeroconf, "_nc-mesh._tcp.local.",
+                             handlers=[on_service_state_change])
 
-    #hostname = socket.gethostname()
-    hostname = "mmalchuk-mbp"
+    hostname = socket.gethostname().split(".")[0]
     serviceType = "_nc-mesh._tcp.local."
 
     properties = {"gateway": "false"}
-    info = ServiceInfo(serviceType,
-            hostname + "." + serviceType,
-            socket.inet_aton(get_ip_address()), 6666,
-            properties=properties)
+    info = ServiceInfo(serviceType, hostname + "." + serviceType,
+                       socket.inet_aton(get_ip_address()), 6666,
+                       properties=properties)
 
     zeroconf.register_service(info)
 
@@ -104,5 +107,3 @@ if __name__ == '__main__':
     finally:
         zeroconf.unregister_service(info)
         zeroconf.close()
-
-
