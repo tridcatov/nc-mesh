@@ -14,7 +14,15 @@ gateway = ""
 def set_gateway(name, hop):
     global gateway
     gateway = name
+    print("Cleaning routing\n")
     cmd("route del default")
+
+    octets = hop.split(".")
+    octets[3] = str(int(octets[3] + 1))
+    address = ".".join(octets)
+    print("Setting ip address to %s" % (address))
+    cmd("ifconfig ")
+
     cmd("route add default gw " + hop) 
     print("Gateway has been set to %s\n" % (gateway))
 
@@ -79,6 +87,7 @@ if __name__ == '__main__':
     hostname = socket.gethostname()
     serviceType = "_nc-mesh._tcp.local."
 
+    cmd("iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE")
     properties = {"gateway": "true"} 
     info = ServiceInfo(serviceType,
             hostname + "." + serviceType,
@@ -94,6 +103,7 @@ if __name__ == '__main__':
         pass
     finally:
         zeroconf.unregister_service(info)
+        cmd("iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE")
         zeroconf.close()
 
 
