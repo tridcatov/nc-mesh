@@ -87,6 +87,7 @@ if __name__ == '__main__':
     hostname = socket.gethostname()
     serviceType = "_nc-mesh._tcp.local."
 
+    cmd("echo 1 > /proc/sys/net/ipv4/ip_forward")
     cmd("iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE")
     properties = {"gateway": "true"} 
     info = ServiceInfo(serviceType,
