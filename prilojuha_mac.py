@@ -3,11 +3,12 @@
 from zeroconf import Zeroconf, ServiceBrowser, ServiceStateChange, ServiceInfo
 
 import logging
+import netifaces
 import socket
 import subprocess
 from time import sleep
 
-hardcode_essid = "ncguest"
+interface = "en0"
 gateway = ""
 
 
@@ -40,19 +41,7 @@ def cmd(cmd):
 
 
 def get_ip_address():
-    response = cmd("iwconfig")
-    interface = ""
-    for line in response.splitlines():
-        if ("ESSID:\"" + hardcode_essid) in line:
-            interface = line.split(" ")[0]
-            break
-
-    response = cmd("ifconfig " + interface)
-    for line in response.splitlines():
-        if "inet " in line:
-            return line.strip().split(" ")[1]
-
-self_ip = get_ip_address()
+    return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
 
 
 def get_hostname_from_servicename(name, service_type):
@@ -71,7 +60,7 @@ def on_service_state_change(zeroconf, service_type, name, state_change):
 
         print("Added device %s, gateway %s" % (address, isGw))
 
-        if (address != self_ip and isGw is True):
+        if (address != get_ip_address() and isGw is True):
             set_gateway(service_hostname, address)
 
     print(gateway)
